@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"smart-cafe-api/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -43,4 +44,17 @@ func (r *UserRepository) GetAllUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) GetByID(id string) (*models.User, error) {
+	fmt.Println("GetByID called with id:", id) // Debugging line
+	var user models.User
+	query := "SELECT id, name, email, created_at FROM users WHERE id = $1"
+
+	err := r.db.QueryRow(context.Background(), query, id).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"smart-cafe-api/internal/config"
 	"smart-cafe-api/internal/database"
 	"smart-cafe-api/internal/handlers"
@@ -24,15 +23,12 @@ func main() {
 	userRepo := repositories.NewUserRepository(dbPool)
 	userHandler := handlers.NewUserHandler(userRepo)
 
-	http.HandleFunc("/users", userHandler.GetUsers)
+	r := handlers.SetupRouter(userHandler)
 
-	port := cfg.ServerPort
-	if port == "" {
-		port = "8080"
-	}
+	addr := fmt.Sprintf(":%s", cfg.ServerPort)
+	log.Printf("Smart Cafe API กำลังรันที่พอร์ต %s 🚀", addr)
 
-	fmt.Printf("🚀 เซิร์ฟเวอร์เริ่มต้นทำงานอย่างปลอดภัยที่พอร์ต %s\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatalf("เซิร์ฟเวอร์หยุดทำงานเนื่องจากข้อผิดพลาด: %v", err)
+	if err := r.Run(addr); err != nil {
+		log.Fatalf("ไม่สามารถเปิดเซิร์ฟเวอร์ Gin ได้: %v", err)
 	}
 }

@@ -1,48 +1,50 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
+
 	"smart-cafe-api/internal/repositories"
+
+	"github.com/gin-gonic/gin"
 )
 
-type User struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 type UserHandler struct {
-	repo UserRepository
+	repo *repositories.UserRepository
 }
 
-type UserRepository interface {
-	GetAllUsers() ([]repositories.User, error)
+func NewUserHandler(repo *repositories.UserRepository) *UserHandler {
+	return &UserHandler{repo: repo}
 }
 
-func NewUserHandler(repo UserRepository) *UserHandler {
-	return &UserHandler{
-		repo: repo,
-	}
-}
-
-// 💡 3. ฟังก์ชัน GetUsers สำหรับรับ HTTP Request และตอบกลับเป็น Response
-func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *UserHandler) GetUser(c *gin.Context) {
+	idParam := c.Param("id")
+	if len(idParam) != 36 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "รูปแบบ UUID ไม่ถูกต้อง"})
 		return
 	}
 
-	users, err := h.repo.GetAllUsers()
+	user, err := h.repo.GetByID(idParam)
 	if err != nil {
-		http.Error(w, "เกิดข้อผิดพลาดในการดึงข้อมูล", http.StatusInternalServerError)
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลผู้ใช้งานนี้"})
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(users); err != nil {
-		http.Error(w, "เกิดข้อผิดพลาดในการสร้าง JSON", http.StatusInternalServerError)
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+	var input struct {
+		Name  string `json:"name" binding:"required"`
+		Email string `json:"email" binding:"required,email"`
 	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลที่ส่งมาไม่ถูกต้อง: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "สร้างผู้ใช้งานสำเร็จ",
+		"data":    input,
+	})
 }
