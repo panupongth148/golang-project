@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"smart-cafe-api/internal/repositories"
@@ -24,8 +25,9 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	}
 
 	user, err := h.repo.GetByID(idParam)
+	fmt.Println("err:", err) // Debugging line
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลผู้ใช้งานนี้"})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
